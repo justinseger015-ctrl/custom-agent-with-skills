@@ -1,0 +1,66 @@
+name: skill_loading_verification
+
+cases:
+  - name: weather_basic_request
+    inputs: "What's the weather in New York?"
+    metadata:
+      expected_skill: weather
+      category: skill_loading
+    evaluators:
+      - SkillWasLoaded:
+          skill_name: weather
+      - ToolWasCalled:
+          tool_name: load_skill_tool
+      - ResponseNotEmpty:
+          min_length: 50
+
+  - name: weather_forecast_request
+    inputs: "What's the forecast for London this week?"
+    metadata:
+      expected_skill: weather
+      category: skill_loading
+    evaluators:
+      - SkillWasLoaded:
+          skill_name: weather
+      - ToolWasCalled:
+          tool_name: http_get_tool
+      - ResponseNotEmpty:
+          min_length: 50
+
+  - name: weather_temperature_query
+    inputs: "How hot is it in Tokyo right now?"
+    metadata:
+      expected_skill: weather
+      category: skill_loading
+    evaluators:
+      - SkillWasLoaded:
+          skill_name: weather
+      - ResponseContains:
+          text: temperature
+
+  - name: code_review_basic
+    inputs: "Please review this code for best practices: def add(a, b): return a + b"
+    metadata:
+      expected_skill: code_review
+      category: skill_loading
+    evaluators:
+      - SkillWasLoaded:
+          skill_name: code_review
+      - ToolWasCalled:
+          tool_name: load_skill_tool
+      - ResponseNotEmpty:
+          min_length: 100
+
+  - name: code_review_security
+    inputs: "Check this code for security issues: query = f'SELECT * FROM users WHERE id={user_id}'"
+    metadata:
+      expected_skill: code_review
+      category: skill_loading
+    evaluators:
+      - SkillWasLoaded:
+          skill_name: code_review
+      - ResponseContains:
+          text: sql
+
+evaluators:
+  - MaxDuration: 30.0

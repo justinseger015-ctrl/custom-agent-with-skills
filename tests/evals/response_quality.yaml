@@ -1,0 +1,28 @@
+name: response_quality_assessment
+
+cases:
+  - name: weather_helpful_response
+    inputs: "What's the weather in Paris?"
+    evaluators:
+      - LLMJudge:
+          rubric: "Response provides accurate weather information and directly answers the user's question"
+          include_input: true
+          assertion:
+            evaluation_name: weather_accuracy
+      - LLMJudge:
+          rubric: "Response is clear, well-formatted, and easy to understand"
+          score:
+            evaluation_name: clarity_score
+
+  - name: code_review_constructive
+    inputs: "Review this function: def calculate(x, y): return x + y"
+    evaluators:
+      - LLMJudge:
+          rubric: "Code review provides constructive, actionable feedback on the code"
+          model: "anthropic:claude-sonnet-4-5"
+          temperature: 0.0
+          assertion:
+            evaluation_name: constructive_feedback
+
+evaluators:
+  - IsInstance: str

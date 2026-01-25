@@ -1,5 +1,6 @@
 """Main skill-based agent implementation with progressive disclosure."""
 
+import logging
 from pydantic_ai import Agent, RunContext
 from pydantic import BaseModel
 from typing import Optional
@@ -7,8 +8,39 @@ from typing import Optional
 from src.providers import get_llm_model
 from src.dependencies import AgentDependencies
 from src.prompts import MAIN_SYSTEM_PROMPT
-from src.skill_tools import load_skill, read_skill_file, list_skill_files
+from src.skill_toolset import skill_tools
 from src.http_tools import http_get, http_post
+from src.settings import load_settings
+
+# Initialize settings
+_settings = load_settings()
+
+# Configure Logfire only if token is present
+if _settings.logfire_token:
+    try:
+        import logfire
+
+        logfire.configure(
+            token=_settings.logfire_token,
+            send_to_logfire='if-token-present',
+            service_name=_settings.logfire_service_name,
+            environment=_settings.logfire_environment,
+        )
+
+        # Instrument Pydantic AI
+        logfire.instrument_pydantic_ai()
+
+        # Instrument HTTP requests to LLM providers
+        logfire.instrument_httpx(capture_all=True)
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"logfire_enabled: service={_settings.logfire_service_name}")
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"logfire_initialization_failed: {str(e)}")
+else:
+    logger = logging.getLogger(__name__)
+    logger.info("logfire_disabled: token not provided")
 
 
 class AgentState(BaseModel):
@@ -22,6 +54,7 @@ skill_agent = Agent(
     get_llm_model(),
     deps_type=AgentDependencies,
     system_prompt="",  # Will be set dynamically via decorator
+    toolsets=[skill_tools],  # Register skill toolset here
 )
 
 
@@ -49,76 +82,6 @@ async def get_system_prompt(ctx: RunContext[AgentDependencies]) -> str:
 
     # Inject skill metadata into base prompt
     return MAIN_SYSTEM_PROMPT.format(skill_metadata=skill_metadata)
-
-
-@skill_agent.tool
-async def load_skill_tool(
-    ctx: RunContext[AgentDependencies],
-    skill_name: str,
-) -> str:
-    """
-    Load the full instructions for a skill.
-
-    Use this tool when you need to access the detailed instructions
-    for a skill. Based on the skill descriptions in your system prompt,
-    identify which skill is relevant and load its full instructions.
-
-    Args:
-        ctx: Agent runtime context with dependencies
-        skill_name: Name of the skill to load (e.g., "weather", "code_review")
-
-    Returns:
-        Full skill instructions from SKILL.md
-    """
-    return await load_skill(ctx, skill_name)
-
-
-@skill_agent.tool
-async def read_skill_file_tool(
-    ctx: RunContext[AgentDependencies],
-    skill_name: str,
-    file_path: str,
-) -> str:
-    """
-    Read a file from a skill's directory.
-
-    Use this tool when skill instructions reference a resource file
-    (e.g., "See references/api_reference.md for API details").
-    This loads the specific resource on-demand.
-
-    Args:
-        ctx: Agent runtime context with dependencies
-        skill_name: Name of the skill containing the file
-        file_path: Relative path to the file (e.g., "references/api_reference.md")
-
-    Returns:
-        Contents of the requested file
-    """
-    return await read_skill_file(ctx, skill_name, file_path)
-
-
-@skill_agent.tool
-async def list_skill_files_tool(
-    ctx: RunContext[AgentDependencies],
-    skill_name: str,
-    directory: Optional[str] = None,
-) -> str:
-    """
-    List files available in a skill's directory.
-
-    Use this tool to discover what resources are available in a skill
-    before loading them. Helpful when you need to explore what
-    documentation, scripts, or other files a skill provides.
-
-    Args:
-        ctx: Agent runtime context with dependencies
-        skill_name: Name of the skill to list files from
-        directory: Optional subdirectory to list (e.g., "references", "scripts")
-
-    Returns:
-        Formatted list of available files
-    """
-    return await list_skill_files(ctx, skill_name, directory or "")
 
 
 @skill_agent.tool

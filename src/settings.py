@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, Literal
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,9 +24,9 @@ class Settings(BaseSettings):
     )
 
     # LLM Configuration (OpenAI-compatible)
-    llm_provider: str = Field(
+    llm_provider: Literal["openrouter", "openai", "ollama"] = Field(
         default="openrouter",
-        description="LLM provider (openai, anthropic, gemini, ollama, etc.)",
+        description="LLM provider to use"
     )
 
     llm_api_key: str = Field(..., description="API key for the LLM provider")
@@ -41,9 +41,33 @@ class Settings(BaseSettings):
         description="Base URL for the LLM API (for OpenAI-compatible providers)",
     )
 
+    # OpenRouter-Specific (Optional)
+    openrouter_app_url: Optional[str] = Field(
+        default=None,
+        description="App URL for OpenRouter analytics (optional)"
+    )
+    openrouter_app_title: Optional[str] = Field(
+        default=None,
+        description="App title for OpenRouter tracking (optional)"
+    )
+
     # Application Settings
     app_env: str = Field(default="development", description="Application environment")
     log_level: str = Field(default="INFO", description="Logging level")
+
+    # Logfire (Optional)
+    logfire_token: Optional[str] = Field(
+        default=None,
+        description="Logfire API token from 'logfire auth' (optional)"
+    )
+    logfire_service_name: str = Field(
+        default="skill-agent",
+        description="Service name in Logfire"
+    )
+    logfire_environment: str = Field(
+        default="development",
+        description="Environment (development, production, etc.)"
+    )
 
 
 def load_settings() -> Settings:

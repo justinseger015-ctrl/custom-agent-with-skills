@@ -286,3 +286,93 @@ The agent has access to these tools:
 | `list_skill_files_tool` | List available files in a skill |
 | `http_get_tool` | Make HTTP GET requests |
 | `http_post_tool` | Make HTTP POST requests |
+
+## Switching LLM Providers
+
+The agent supports three LLM providers. Configure via `.env`:
+
+### OpenRouter (Recommended)
+
+```bash
+LLM_PROVIDER=openrouter
+LLM_API_KEY=sk-or-v1-your-key
+LLM_MODEL=anthropic/claude-haiku-4.5
+LLM_BASE_URL=https://openrouter.ai/api/v1
+
+# Optional: App attribution
+OPENROUTER_APP_URL=https://yourdomain.com
+OPENROUTER_APP_TITLE=Your App Name
+```
+
+### OpenAI
+
+```bash
+LLM_PROVIDER=openai
+LLM_API_KEY=sk-proj-your-openai-api-key
+LLM_MODEL=gpt-4o-mini
+# LLM_BASE_URL not needed for OpenAI
+```
+
+### Ollama (Local)
+
+```bash
+LLM_PROVIDER=ollama
+LLM_API_KEY=ollama
+LLM_MODEL=llama3.2
+LLM_BASE_URL=http://localhost:11434/v1
+```
+
+## Testing & Validation
+
+### Running Tests
+
+```bash
+# Unit tests
+uv run pytest tests/test_skill_loader.py -v
+uv run pytest tests/test_skill_tools.py -v
+
+# Integration tests
+uv run pytest tests/test_agent.py -v
+
+# All tests
+uv run pytest tests/ -v
+```
+
+### Running Evaluations
+
+The project includes a comprehensive evaluation system with YAML-based datasets and custom evaluators:
+
+```bash
+# Run all evals
+uv run python -m tests.evals.run_evals
+
+# Run specific dataset
+uv run python -m tests.evals.run_evals --dataset skill_loading
+
+# Verbose output with reasons
+uv run python -m tests.evals.run_evals --verbose
+```
+
+### Validation Scripts
+
+```bash
+# Test agent interactively with predefined queries
+uv run python -m scripts.test_agent
+
+# Validate skill structure and content
+uv run python -m scripts.validate_skills
+
+# Run full validation pipeline
+uv run python -m scripts.run_full_validation
+```
+
+## Observability with Logfire (Optional)
+
+Enable Logfire for production monitoring and debugging:
+
+1. Get Logfire token: `logfire auth`
+2. Set in `.env`: `LOGFIRE_TOKEN=your-token`
+3. Run agent - traces appear at https://logfire.pydantic.dev
+
+Without token, Logfire is disabled and agent works normally.
+

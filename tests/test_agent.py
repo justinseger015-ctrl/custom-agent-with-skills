@@ -12,10 +12,14 @@ from src.dependencies import AgentDependencies
 
 
 def get_agent_tools() -> Dict[str, any]:
-    """Get the registered tools from the agent."""
-    if skill_agent.toolsets:
-        return skill_agent.toolsets[0].tools
-    return {}
+    """Get all registered tools from the agent (including toolsets)."""
+    all_tools = {}
+    for toolset in skill_agent.toolsets:
+        if hasattr(toolset, 'tools'):
+            all_tools.update(toolset.tools)
+        if hasattr(toolset, '_tools'):
+            all_tools.update(toolset._tools)
+    return all_tools
 
 
 @dataclass
